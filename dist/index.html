@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>TypeScript ASCII Game</title>
+        <style>
+            .player {
+                color: rgb(36, 1, 81);
+            }
+            .enemy {
+                color: red;
+            }
+            .obstacle {
+                color: grey;
+            }
+            #gameScreen{
+                position: relative;
+                color: darkgreen;
+                line-height: 0.7;
+                font-family: 'Courier New', Courier, monospace;
+                letter-spacing: 1px;
+                word-spacing: normal;
+            }
+
+            #gui {
+                display: flex;
+                justify-content: space-between;
+                font-family: 'Courier New', Courier, monospace;
+                border: 2px solid #000;
+                padding: 10px;
+            }
+
+            #health-container, #score-container {
+                display: flex;
+                align-items: center;
+            }
+
+            .health, .score {
+                margin-right: 5px;
+            }
+
+            #gameOver {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                margin: auto;
+                width: 50%;
+                height: fit-content;
+                color: darkred;
+                display: none;
+                font-size: 50px;
+                font-family: 'Courier New', Courier, monospace;
+                text-align: center;
+                align-self: center;
+                z-index: 10;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="gameScreen"></div>
+        <div id="gui" style="display: flex; justify-content: space-between;">
+            <div id="health-container">
+                <span class="health", style="color: darkred">Health: </span>
+                <span id="health"></span>
+            </div>
+            <div id="score-container">
+                <span class="score", style="color: goldenrod">Score: </span>
+                <span id="score"></span>
+            </div>
+        </div>
+        <div id="gameOver">Game Over!</div>
+        <script src="Render.js"></script>
+    </body>
+</html>
