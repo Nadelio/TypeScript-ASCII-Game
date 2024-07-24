@@ -272,4 +272,6 @@ start();
 //TO/DO: enemy creation -> movement/ai -> collision detection -> dealing damage/taking damage
 //TO/DO: enemy health -> player/enemy attack -> enemy death
 //TODO: UI -> score system -> high score
-// Object.defineProperty(exports, "__esModule", { value: true });
+Render.js:11 Uncaught ReferenceError: exports is not defined
+at Render.js:11:23
+(anonymous) @ Render.js:11
