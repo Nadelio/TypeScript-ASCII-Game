@@ -8,10 +8,16 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.screenBuffer = void 0;
+exports.collisionCheck = collisionCheck;
+exports.subtractHealth = subtractHealth;
+const Enemy_1 = require("./Enemy");
+const Register_1 = require("./Register");
 const gameScreen = document.getElementById('gameScreen');
 const gui = document.getElementById('gui');
 let baseScreen = buildBaseScreen(buildScreenRow());
-let screenBuffer = baseScreen.map(row => [...row]);
+exports.screenBuffer = baseScreen.map(row => [...row]);
 let bounds = [53, 67];
 let playerPosition = [0, 0];
 let lastPlayerPosition = [0, 0];
@@ -75,35 +81,57 @@ function startRender(screen) {
             if (event.key == 'r' && dead) {
                 gameRestart();
             }
-            screenBuffer[playerPosition[0]][playerPosition[1]] = '●';
+            exports.screenBuffer[playerPosition[0]][playerPosition[1]] = '●';
             if (lastPlayerPosition[0] !== playerPosition[0] || lastPlayerPosition[1] !== playerPosition[1]) {
-                screenBuffer[lastPlayerPosition[0]][lastPlayerPosition[1]] = '■';
+                exports.screenBuffer[lastPlayerPosition[0]][lastPlayerPosition[1]] = '■';
             }
         });
-        screen.textContent = screenBuffer.map(row => row.join('')).join('\n');
+        screen.textContent = exports.screenBuffer.map(row => row.join('')).join('\n');
         console.log('Render started');
         resolve();
     });
 }
 function collisionCheck(row, col) {
-    return screenBuffer[row][col] === '■';
+    switch (exports.screenBuffer[row][col]) {
+        case 'X':
+            console.log('Player touched a dangerous obstacle');
+            subtractHealth(10);
+            break;
+        case 'V':
+            console.log('Player touched an enemy');
+            subtractHealth(15);
+            break;
+        default:
+            break;
+    }
+    return exports.screenBuffer[row][col] === '■';
 }
 function initPlayer() {
-    screenBuffer[0][0] = '●';
+    exports.screenBuffer[0][0] = '●';
     console.log('Player placed');
+}
+function initEnemies(amount) {
+    for (let i = 0; i < amount; i++) {
+        let row = Math.floor(Math.random() * bounds[0]);
+        let col = Math.floor(Math.random() * bounds[1]);
+        if (exports.screenBuffer[row][col] !== '●') {
+            exports.screenBuffer[row][col] = 'V';
+        }
+        new Enemy_1.Enemy(i, [row, col], 4, 1, 1);
+    }
 }
 function placeObstacles() {
     for (let i = 0; i < 200; i++) {
         let row = Math.floor(Math.random() * bounds[0]);
         let col = Math.floor(Math.random() * bounds[1]);
-        if (screenBuffer[row][col] !== '●') {
-            screenBuffer[row][col] = '□';
+        if (exports.screenBuffer[row][col] !== '●') {
+            exports.screenBuffer[row][col] = '□';
         }
     }
 }
 function pushBufferToScreen(screen) {
     if (screen) {
-        screen.textContent = screenBuffer.map(row => row.join('')).join('\n');
+        screen.textContent = exports.screenBuffer.map(row => row.join('')).join('\n');
         doScreenHighlights();
     }
 }
@@ -127,7 +155,7 @@ function _highlight(wordToHighlight, styleTag) {
 function doScreenHighlights() {
     const textElement = document.getElementById('gameScreen');
     if (textElement) {
-        let textContent = screenBuffer.map(row => row.join('')).join('\n');
+        let textContent = exports.screenBuffer.map(row => row.join('')).join('\n');
         const playerSymbol = '●';
         const obstacleSymbol = '□';
         const enemySymbol = 'V';
@@ -159,6 +187,15 @@ function renderLoop() {
         }
     });
 }
+function enemyProcess() {
+    return __awaiter(this, void 0, void 0, function* () {
+        while (true) {
+            Register_1.enemyRegister.forEach(element => {
+                element.doMove(playerPosition);
+            });
+        }
+    });
+}
 function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
 }
@@ -173,14 +210,16 @@ function onDeath() {
 function start() {
     return __awaiter(this, void 0, void 0, function* () {
         initPlayer();
+        initEnemies(3);
         placeObstacles();
         pushBufferToScreen(gameScreen);
         yield startRender(gameScreen);
         renderLoop();
+        enemyProcess();
     });
 }
 function gameRestart() {
-    screenBuffer = baseScreen.map(row => [...row]);
+    exports.screenBuffer = baseScreen.map(row => [...row]);
     playerPosition = [0, 0];
     lastPlayerPosition = [0, 0];
     playerHealth = 100;
@@ -194,5 +233,17 @@ function gameRestart() {
     placeObstacles();
     pushBufferToScreen(gameScreen);
     renderLoop();
+}
+function subtractHealth(amount) {
+    playerHealth -= amount;
+}
+function addHealth(amount) {
+    playerHealth += amount;
+}
+function subtractScore(amount) {
+    playerScore -= amount;
+}
+function addScore(amount) {
+    playerScore += amount;
 }
 start();

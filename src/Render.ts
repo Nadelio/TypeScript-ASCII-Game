@@ -1,8 +1,11 @@
+import { Enemy } from './Enemy';
+import { enemyRegister } from './Register';
+
 const gameScreen = document.getElementById('gameScreen');
 const gui = document.getElementById('gui');
 
 let baseScreen : string[][] = buildBaseScreen(buildScreenRow());
-let screenBuffer : string[][] = baseScreen.map(row => [...row]);
+export let screenBuffer : string[][] = baseScreen.map(row => [...row]);
 let bounds: number[] = [53, 67];
 let playerPosition: number[] = [0, 0];
 let lastPlayerPosition: number[] = [0, 0];
@@ -85,13 +88,37 @@ function startRender(screen : HTMLElement): Promise<void> {
     });
 }
 
-function collisionCheck(row: number, col: number): boolean{
+export function collisionCheck(row: number, col: number): boolean{
+    switch(screenBuffer[row][col]){
+        case 'X':
+            console.log('Player touched a dangerous obstacle');
+            subtractHealth(10);
+            break;
+        case 'V':
+            console.log('Player touched an enemy');
+            subtractHealth(15);
+            break;
+        default:
+            break;
+    }
+
     return screenBuffer[row][col] === '■';
 }
 
 function initPlayer(){
     screenBuffer[0][0] = '●';
     console.log('Player placed');
+}
+
+function initEnemies(amount: number){
+    for(let i = 0; i < amount; i++){
+        let row = Math.floor(Math.random() * bounds[0]);
+        let col = Math.floor(Math.random() * bounds[1]);
+        if(screenBuffer[row][col] !== '●'){
+            screenBuffer[row][col] = 'V';
+        }
+        new Enemy(i, [row, col], 4, 1, 1);
+    }
 }
 
 function placeObstacles(){
@@ -173,6 +200,14 @@ async function renderLoop(){
     }
 }
 
+async function enemyProcess(){
+    while(true){
+        enemyRegister.forEach(element => {
+            element.doMove(playerPosition);
+        });
+    }
+}
+
 function clamp(value: number, min: number, max: number): number {
     return Math.max(min, Math.min(max, value));
 }
@@ -188,10 +223,12 @@ function onDeath(){
 
 async function start(){
     initPlayer();
+    initEnemies(3);
     placeObstacles();
     pushBufferToScreen(gameScreen as HTMLElement);
     await startRender(gameScreen as HTMLElement);
     renderLoop();
+    enemyProcess();
 }
 
 function gameRestart(){
@@ -211,6 +248,22 @@ function gameRestart(){
     renderLoop();
 }
 
+export function subtractHealth(amount: number){
+    playerHealth -= amount;
+}
+
+function addHealth(amount: number){
+    playerHealth += amount;
+}
+
+function subtractScore(amount: number){
+    playerScore -= amount;
+}
+
+function addScore(amount: number){
+    playerScore += amount;
+}
+
 start();
 
 // ■ ● □
@@ -219,3 +272,4 @@ start();
 //TO/DO: enemy creation -> movement/ai -> collision detection -> dealing damage/taking damage
 //TO/DO: enemy health -> player/enemy attack -> enemy death
 //TODO: UI -> score system -> high score
+// Object.defineProperty(exports, "__esModule", { value: true });
