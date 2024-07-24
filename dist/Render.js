@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 class Enemy {
-    constructor(uid, position, health, damage, speed) {
+    constructor(uid, position, health, damage, speed, mapBounds) {
         this.lastPosition = [];
         this.Dead = false;
         this.UID = uid;
@@ -17,6 +17,7 @@ class Enemy {
         this.Health = health;
         this.Damage = damage;
         this.Speed = speed;
+        this.mapBounds = mapBounds;
         addToRegister(this, "enemy");
     }
     move(playerPosition) {
@@ -26,10 +27,10 @@ class Enemy {
         if (this.Dead) {
             return;
         }
-        let availableMoves = [[clamp(this.Position[0] - 1, 0, bounds[1]), this.Position[1]],
-            [clamp(this.Position[0] + 1, 0, bounds[1]), this.Position[1]],
-            [this.Position[0], clamp(this.Position[1] - 1, 0, bounds[0])],
-            [this.Position[0], clamp(this.Position[1] + 1, 0, bounds[0])]];
+        let availableMoves = [[clamp(this.Position[0] - 1, 0, this.mapBounds[1]), this.Position[1]],
+            [clamp(this.Position[0] + 1, 0, this.mapBounds[1]), this.Position[1]],
+            [this.Position[0], clamp(this.Position[1] - 1, 0, this.mapBounds[0])],
+            [this.Position[0], clamp(this.Position[1] + 1, 0, this.mapBounds[0])]];
         if (this.UID == 0) {
             console.log(this.UID + "> Avaliable Moves: " + this.format2DArray(availableMoves));
         }
@@ -44,7 +45,7 @@ class Enemy {
             if (this.UID == 0) {
                 console.log(this.UID + "> Potential Position: " + potentialPosition);
             }
-            if (!collisionCheck(potentialPosition[0], potentialPosition[1])) {
+            if (!collisionCheck(clamp(potentialPosition[0], 0, this.mapBounds[0]), clamp(potentialPosition[1], 0, this.mapBounds[1]))) {
                 trapCount++;
                 if (this.UID == 0) {
                     console.log(this.UID + "> Trap Count: " + trapCount);
@@ -55,15 +56,13 @@ class Enemy {
                     console.log(this.UID + "> Available Moves: " + this.format2DArray(availableMoves));
                 }
             }
-            else if (distancesToPlayer[i] === 1) {
+            else if (distancesToPlayer[i] <= 1) {
                 this.attack();
                 return;
             }
-            distancesToPlayer.push(this.getDistance(potentialPosition, playerPosition));
-        }
-        if (distancesToPlayer.length !== availableMoves.length) {
-            console.error("Mismatch between distances and available moves.");
-            return;
+            else {
+                distancesToPlayer.push(this.getDistance(potentialPosition, playerPosition));
+            }
         }
         if (this.UID == 0) {
             console.log(this.UID + "> Final Trap Count: " + trapCount);
@@ -148,9 +147,13 @@ class Enemy {
     format2DArray(array) { return array.map(subArray => `[${subArray.join(', ')}]`).join(', '); }
     doMove(playerPosition) {
         return __awaiter(this, void 0, void 0, function* () {
+            if (!Array.isArray(this.Position) || this.Position.length !== 2) {
+                console.error("this.Position is not a valid array." + " Position: " + this.Position);
+                return;
+            }
             this.lastPosition = [...this.Position];
             this.move(playerPosition);
-            this.delay(1000 / this.Speed);
+            yield this.delay(1000 / this.Speed);
             screenBuffer[this.Position[0]][this.Position[1]] = 'V';
             if (this.lastPosition[0] !== this.Position[0] || this.lastPosition[1] !== this.Position[1]) {
                 screenBuffer[this.lastPosition[0]][this.lastPosition[1]] = '■';
@@ -260,7 +263,7 @@ function initEnemies(amount) {
         if (screenBuffer[row][col] !== ('●' || 'V' || '□')) {
             screenBuffer[row][col] = 'V';
         }
-        new Enemy(i + offset, [row, col], 4, 1, 0.5);
+        new Enemy(i + offset, [row, col], 4, 1, 0.5, bounds);
     }
     offset += amount;
 }

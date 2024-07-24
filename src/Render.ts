@@ -7,14 +7,16 @@ class Enemy
     public Damage: number;
     public Speed: number;
     public Dead: boolean = false;
+    public mapBounds: number[];
 
-    constructor(uid: number, position: number[], health: number, damage: number, speed: number)
+    constructor(uid: number, position: number[], health: number, damage: number, speed: number, mapBounds: number[])
     {
         this.UID = uid;
-        this.Position = position;
+        this.Position = position as number[];
         this.Health = health;
         this.Damage = damage;
         this.Speed = speed;
+        this.mapBounds = mapBounds;
         addToRegister(this, "enemy");
     }
 
@@ -23,10 +25,10 @@ class Enemy
 
         if(this.Dead){ return; }
 
-        let availableMoves: number[][] = [[clamp(this.Position[0] - 1, 0, bounds[1]), this.Position[1]], // left
-                                          [clamp(this.Position[0] + 1, 0, bounds[1]), this.Position[1]], // right
-                                          [this.Position[0], clamp(this.Position[1] - 1, 0, bounds[0])], // up
-                                          [this.Position[0], clamp(this.Position[1] + 1, 0, bounds[0])]]; // down
+        let availableMoves: number[][] = [[clamp(this.Position[0] - 1, 0, this.mapBounds[1]), this.Position[1]], // left
+                                          [clamp(this.Position[0] + 1, 0, this.mapBounds[1]), this.Position[1]], // right
+                                          [this.Position[0], clamp(this.Position[1] - 1, 0, this.mapBounds[0])], // up
+                                          [this.Position[0], clamp(this.Position[1] + 1, 0, this.mapBounds[0])]]; // down
 
         if(this.UID == 0){ console.log(this.UID + "> Avaliable Moves: " + this.format2DArray(availableMoves)); }
 
@@ -41,22 +43,18 @@ class Enemy
         for(let i = 0; i < availableMoves.length; i++){
             let potentialPosition = [...availableMoves[i]];
             if(this.UID == 0){ console.log(this.UID + "> Potential Position: " + potentialPosition); }
-            if(!collisionCheck(potentialPosition[0], potentialPosition[1])){
+            if(!collisionCheck(clamp(potentialPosition[0], 0, this.mapBounds[0]), clamp(potentialPosition[1], 0, this.mapBounds[1]))){
                 trapCount++;
                 if(this.UID == 0){ console.log(this.UID + "> Trap Count: " + trapCount); }
                 availableMoves.splice(i, 1);
                 i--;
                 if(this.UID == 0){ console.log(this.UID + "> Available Moves: " + this.format2DArray(availableMoves)); }
-            } else if(distancesToPlayer[i] === 1){
+            } else if(distancesToPlayer[i] <= 1){
                 this.attack();
                 return;
+            } else {
+                distancesToPlayer.push(this.getDistance(potentialPosition, playerPosition));
             }
-            distancesToPlayer.push(this.getDistance(potentialPosition, playerPosition));
-        }
-        
-        if (distancesToPlayer.length !== availableMoves.length) {
-            console.error("Mismatch between distances and available moves.");
-            return;
         }
 
         if(this.UID == 0){ console.log(this.UID + "> Final Trap Count: " + trapCount); console.log(this.UID + "> Distances to Player: " + distancesToPlayer); }
@@ -121,9 +119,13 @@ class Enemy
     private format2DArray(array: number[][]): string { return array.map(subArray => `[${subArray.join(', ')}]`).join(', '); }
 
     public async doMove(playerPosition: number[]){
+        if (!Array.isArray(this.Position) || this.Position.length !== 2) {
+            console.error("this.Position is not a valid array." + " Position: " + this.Position);
+            return;
+        }
         this.lastPosition = [...this.Position];
         this.move(playerPosition);
-        this.delay(1000/this.Speed);
+        await this.delay(1000/this.Speed);
         screenBuffer[this.Position[0]][this.Position[1]] = 'V';
         if(this.lastPosition[0] !== this.Position[0] || this.lastPosition[1] !== this.Position[1]){
             screenBuffer[this.lastPosition[0]][this.lastPosition[1]] = '■';
@@ -248,7 +250,7 @@ function initEnemies(amount: number){
         if(screenBuffer[row][col] !== ('●' || 'V' || '□')){
             screenBuffer[row][col] = 'V';
         }
-        new Enemy(i + offset, [row, col], 4, 1, 0.5);
+        new Enemy(i + offset, [row, col], 4, 1, 0.5, bounds);
     }
     offset += amount;
 }
@@ -402,6 +404,6 @@ start();
 // ■ ● □
 //https://www.alt-codes.net/square-symbols
 
-//TO/DO: enemy creation -> movement/ai -> collision detection -> dealing damage/taking damage
-//TO/DO: enemy health -> player/enemy attack -> enemy death
+//TODO: movement/ai -> collision detection -> taking damage
+//TODO: player/enemy attack -> enemy death
 //TODO: UI -> score system -> high score
