@@ -14,7 +14,7 @@
     "start": "npx electron dist/App.js",
     "full-build": "tsc && electron-builder"
   },
-  "build":{
+  "build": {
     "appId": "Untitled ASCII Game",
     "productName": "Untitled ASCII Game",
     "artifactName": "${productName}-${version}.${ext}",

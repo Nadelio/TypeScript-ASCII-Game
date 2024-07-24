@@ -8,22 +8,176 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.screenBuffer = void 0;
-exports.collisionCheck = collisionCheck;
-exports.subtractHealth = subtractHealth;
-const Enemy_1 = require("./Enemy");
-const Register_1 = require("./Register");
+class Enemy {
+    constructor(uid, position, health, damage, speed) {
+        this.lastPosition = [];
+        this.Dead = false;
+        this.UID = uid;
+        this.Position = position;
+        this.Health = health;
+        this.Damage = damage;
+        this.Speed = speed;
+        addToRegister(this, "enemy");
+    }
+    move(playerPosition) {
+        if (this.UID == 0) {
+            console.log(this.UID + "> move()");
+        }
+        if (this.Dead) {
+            return;
+        }
+        let availableMoves = [[clamp(this.Position[0] - 1, 0, bounds[1]), this.Position[1]],
+            [clamp(this.Position[0] + 1, 0, bounds[1]), this.Position[1]],
+            [this.Position[0], clamp(this.Position[1] - 1, 0, bounds[0])],
+            [this.Position[0], clamp(this.Position[1] + 1, 0, bounds[0])]];
+        if (this.UID == 0) {
+            console.log(this.UID + "> Avaliable Moves: " + this.format2DArray(availableMoves));
+        }
+        let trapCount = 0;
+        let distancesToPlayer = [];
+        if (availableMoves.length === 0) {
+            console.error("No available moves.");
+            return;
+        }
+        for (let i = 0; i < availableMoves.length; i++) {
+            let potentialPosition = [...availableMoves[i]];
+            if (this.UID == 0) {
+                console.log(this.UID + "> Potential Position: " + potentialPosition);
+            }
+            if (!collisionCheck(potentialPosition[0], potentialPosition[1])) {
+                trapCount++;
+                if (this.UID == 0) {
+                    console.log(this.UID + "> Trap Count: " + trapCount);
+                }
+                availableMoves.splice(i, 1);
+                i--;
+                if (this.UID == 0) {
+                    console.log(this.UID + "> Available Moves: " + this.format2DArray(availableMoves));
+                }
+            }
+            else if (distancesToPlayer[i] === 1) {
+                this.attack();
+                return;
+            }
+            distancesToPlayer.push(this.getDistance(potentialPosition, playerPosition));
+        }
+        if (distancesToPlayer.length !== availableMoves.length) {
+            console.error("Mismatch between distances and available moves.");
+            return;
+        }
+        if (this.UID == 0) {
+            console.log(this.UID + "> Final Trap Count: " + trapCount);
+            console.log(this.UID + "> Distances to Player: " + distancesToPlayer);
+        }
+        if (trapCount == 3) {
+            this.getOnlyMove(availableMoves);
+            return;
+        }
+        if (trapCount >= 4) {
+            this.Dead = true;
+            return;
+        }
+        if (trapCount <= 2) {
+            this.getBestMove(distancesToPlayer, availableMoves);
+            return;
+        }
+    }
+    attack() {
+        if (this.UID == 0) {
+            console.log(this.UID + "> attack()");
+        }
+        subtractHealth(this.Damage);
+        this.Health--;
+    }
+    getDistance(potentialPosition, targetPosition) {
+        return Math.abs(potentialPosition[0] - targetPosition[0]) + Math.abs(potentialPosition[1] - targetPosition[1]);
+    }
+    getOnlyMove(availableMoves) {
+        if (this.UID == 0) {
+            console.log(this.UID + "> getOnlyMove()");
+        }
+        if (availableMoves.length > 0 && Array.isArray(this.Position)) {
+            availableMoves.forEach(element => {
+                if (screenBuffer[element[0]][element[1]] === '■') {
+                    this.Position = [...element];
+                    if (this.UID == 0) {
+                        console.log(this.UID + "> Moved To: " + this.Position + " From: " + this.lastPosition);
+                    }
+                    return;
+                }
+            });
+        }
+        else {
+            console.error("Available moves is empty or this.Position is not an array.");
+        }
+    }
+    getBestMove(distancesToPlayer, availableMoves) {
+        if (this.UID == 0) {
+            console.log(this.UID + "> getBestMove()");
+        }
+        let closestIndex = 0;
+        let closestDistance = distancesToPlayer[0];
+        for (let i = 1; i < distancesToPlayer.length; i++) {
+            if (distancesToPlayer[i] < closestDistance) {
+                closestDistance = distancesToPlayer[i];
+                closestIndex = i;
+            }
+            else if (distancesToPlayer[i] === closestDistance) {
+                let random = Math.floor(Math.random() * 2);
+                if (random == 0) {
+                    closestDistance = distancesToPlayer[i];
+                    closestIndex = i;
+                }
+            }
+        }
+        if (this.UID == 0) {
+            console.log(this.UID + "> Best Move: " + availableMoves[closestIndex]);
+        }
+        this.Position = availableMoves[closestIndex];
+        if (this.UID == 0) {
+            console.log(this.UID + "> Moved To: " + this.Position + " From: " + this.lastPosition);
+        }
+    }
+    delay(milliseconds) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise(resolve => setTimeout(resolve, milliseconds));
+        });
+    }
+    setDead() { this.Dead = true; }
+    setAlive() { this.Dead = false; }
+    format2DArray(array) { return array.map(subArray => `[${subArray.join(', ')}]`).join(', '); }
+    doMove(playerPosition) {
+        return __awaiter(this, void 0, void 0, function* () {
+            this.lastPosition = [...this.Position];
+            this.move(playerPosition);
+            this.delay(1000 / this.Speed);
+            screenBuffer[this.Position[0]][this.Position[1]] = 'V';
+            if (this.lastPosition[0] !== this.Position[0] || this.lastPosition[1] !== this.Position[1]) {
+                screenBuffer[this.lastPosition[0]][this.lastPosition[1]] = '■';
+            }
+        });
+    }
+    doDeath() {
+        screenBuffer[this.Position[0]][this.Position[1]] = '■';
+    }
+}
 const gameScreen = document.getElementById('gameScreen');
 const gui = document.getElementById('gui');
 let baseScreen = buildBaseScreen(buildScreenRow());
-exports.screenBuffer = baseScreen.map(row => [...row]);
+let screenBuffer = baseScreen.map(row => [...row]);
 let bounds = [53, 67];
 let playerPosition = [0, 0];
 let lastPlayerPosition = [0, 0];
 let playerHealth = 100;
 let playerScore = 0;
 let dead = false;
+let enemyRegister = [];
+function addToRegister(data, registerName) {
+    switch (registerName) {
+        case 'enemy':
+            enemyRegister.push(data);
+    }
+}
 function buildScreenRow() {
     let row = [];
     for (let i = 0; i < 67; i++) {
@@ -48,7 +202,7 @@ function startRender(screen) {
         });
         document.addEventListener('keydown', (event) => {
             console.log(`Key pressed: ${event.key}`);
-            lastPlayerPosition = playerPosition.map(pos => pos);
+            lastPlayerPosition = [...playerPosition];
             if (!dead) {
                 switch (event.key) {
                     case 'w':
@@ -81,57 +235,47 @@ function startRender(screen) {
             if (event.key == 'r' && dead) {
                 gameRestart();
             }
-            exports.screenBuffer[playerPosition[0]][playerPosition[1]] = '●';
+            screenBuffer[playerPosition[0]][playerPosition[1]] = '●';
             if (lastPlayerPosition[0] !== playerPosition[0] || lastPlayerPosition[1] !== playerPosition[1]) {
-                exports.screenBuffer[lastPlayerPosition[0]][lastPlayerPosition[1]] = '■';
+                screenBuffer[lastPlayerPosition[0]][lastPlayerPosition[1]] = '■';
             }
         });
-        screen.textContent = exports.screenBuffer.map(row => row.join('')).join('\n');
+        screen.textContent = screenBuffer.map(row => row.join('')).join('\n');
         console.log('Render started');
         resolve();
     });
 }
 function collisionCheck(row, col) {
-    switch (exports.screenBuffer[row][col]) {
-        case 'X':
-            console.log('Player touched a dangerous obstacle');
-            subtractHealth(10);
-            break;
-        case 'V':
-            console.log('Player touched an enemy');
-            subtractHealth(15);
-            break;
-        default:
-            break;
-    }
-    return exports.screenBuffer[row][col] === '■';
+    return screenBuffer[row][col] === '■';
 }
 function initPlayer() {
-    exports.screenBuffer[0][0] = '●';
+    screenBuffer[0][0] = '●';
     console.log('Player placed');
 }
+let offset = 0;
 function initEnemies(amount) {
     for (let i = 0; i < amount; i++) {
         let row = Math.floor(Math.random() * bounds[0]);
         let col = Math.floor(Math.random() * bounds[1]);
-        if (exports.screenBuffer[row][col] !== '●') {
-            exports.screenBuffer[row][col] = 'V';
+        if (screenBuffer[row][col] !== ('●' || 'V' || '□')) {
+            screenBuffer[row][col] = 'V';
         }
-        new Enemy_1.Enemy(i, [row, col], 4, 1, 1);
+        new Enemy(i + offset, [row, col], 4, 1, 0.5);
     }
+    offset += amount;
 }
 function placeObstacles() {
     for (let i = 0; i < 200; i++) {
         let row = Math.floor(Math.random() * bounds[0]);
         let col = Math.floor(Math.random() * bounds[1]);
-        if (exports.screenBuffer[row][col] !== '●') {
-            exports.screenBuffer[row][col] = '□';
+        if (screenBuffer[row][col] !== '●') {
+            screenBuffer[row][col] = '□';
         }
     }
 }
 function pushBufferToScreen(screen) {
     if (screen) {
-        screen.textContent = exports.screenBuffer.map(row => row.join('')).join('\n');
+        screen.textContent = screenBuffer.map(row => row.join('')).join('\n');
         doScreenHighlights();
     }
 }
@@ -155,7 +299,7 @@ function _highlight(wordToHighlight, styleTag) {
 function doScreenHighlights() {
     const textElement = document.getElementById('gameScreen');
     if (textElement) {
-        let textContent = exports.screenBuffer.map(row => row.join('')).join('\n');
+        let textContent = screenBuffer.map(row => row.join('')).join('\n');
         const playerSymbol = '●';
         const obstacleSymbol = '□';
         const enemySymbol = 'V';
@@ -177,6 +321,7 @@ function renderLoop() {
             if (playerHealth <= 0) {
                 onDeath();
             }
+            enemyProcess();
             updateGUI();
             pushBufferToScreen(gameScreen);
             if (dead) {
@@ -188,13 +333,12 @@ function renderLoop() {
     });
 }
 function enemyProcess() {
-    return __awaiter(this, void 0, void 0, function* () {
-        while (true) {
-            Register_1.enemyRegister.forEach(element => {
-                element.doMove(playerPosition);
-            });
+    for (let i = 0; i < enemyRegister.length; i++) {
+        enemyRegister[i].doMove(playerPosition);
+        if (enemyRegister[i].Dead) {
+            enemyRegister[i].doDeath();
         }
-    });
+    }
 }
 function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
@@ -215,21 +359,22 @@ function start() {
         pushBufferToScreen(gameScreen);
         yield startRender(gameScreen);
         renderLoop();
-        enemyProcess();
     });
 }
 function gameRestart() {
-    exports.screenBuffer = baseScreen.map(row => [...row]);
+    screenBuffer = baseScreen.map(row => [...row]);
     playerPosition = [0, 0];
     lastPlayerPosition = [0, 0];
     playerHealth = 100;
     playerScore = 0;
     dead = false;
+    enemyRegister.forEach(element => { element.setDead(); });
     const gameOverElement = document.getElementById('gameOver');
     if (gameOverElement) {
         gameOverElement.style.display = 'none';
     }
     initPlayer();
+    initEnemies(3);
     placeObstacles();
     pushBufferToScreen(gameScreen);
     renderLoop();
