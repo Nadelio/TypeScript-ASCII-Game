@@ -20,7 +20,7 @@ class Enemy
         addToRegister(this, "enemy");
     }
 
-    private move(playerPosition: number[]){
+    private async move(playerPosition: number[]){
         if(this.UID == 0){ console.log(this.UID + "> move()"); }
 
         if(this.Dead){ return; }
@@ -49,7 +49,7 @@ class Enemy
                 availableMoves.splice(i, 1);
                 i--;
                 if(this.UID == 0){ console.log(this.UID + "> Available Moves: " + this.format2DArray(availableMoves)); }
-            } else if(distancesToPlayer[i] <= 1){
+            } else if(distancesToPlayer[i] <= 2){
                 this.attack();
                 return;
             } else {
@@ -124,7 +124,7 @@ class Enemy
             return;
         }
         this.lastPosition = [...this.Position];
-        this.move(playerPosition);
+        await this.move(playerPosition);
         await this.delay(1000/this.Speed);
         screenBuffer[this.Position[0]][this.Position[1]] = 'V';
         if(this.lastPosition[0] !== this.Position[0] || this.lastPosition[1] !== this.Position[1]){
@@ -247,7 +247,7 @@ function initEnemies(amount: number){
     for(let i = 0; i < amount; i++){
         let row = Math.floor(Math.random() * bounds[0]);
         let col = Math.floor(Math.random() * bounds[1]);
-        if(screenBuffer[row][col] !== ('●' || 'V' || '□')){
+        if(screenBuffer[row][col] !== '●' && screenBuffer[row][col] !== 'V' && screenBuffer[row][col] !== '□'){
             screenBuffer[row][col] = 'V';
         }
         new Enemy(i + offset, [row, col], 4, 1, 0.5, bounds);

@@ -21,65 +21,67 @@ class Enemy {
         addToRegister(this, "enemy");
     }
     move(playerPosition) {
-        if (this.UID == 0) {
-            console.log(this.UID + "> move()");
-        }
-        if (this.Dead) {
-            return;
-        }
-        let availableMoves = [[clamp(this.Position[0] - 1, 0, this.mapBounds[1]), this.Position[1]],
-            [clamp(this.Position[0] + 1, 0, this.mapBounds[1]), this.Position[1]],
-            [this.Position[0], clamp(this.Position[1] - 1, 0, this.mapBounds[0])],
-            [this.Position[0], clamp(this.Position[1] + 1, 0, this.mapBounds[0])]];
-        if (this.UID == 0) {
-            console.log(this.UID + "> Avaliable Moves: " + this.format2DArray(availableMoves));
-        }
-        let trapCount = 0;
-        let distancesToPlayer = [];
-        if (availableMoves.length === 0) {
-            console.error("No available moves.");
-            return;
-        }
-        for (let i = 0; i < availableMoves.length; i++) {
-            let potentialPosition = [...availableMoves[i]];
+        return __awaiter(this, void 0, void 0, function* () {
             if (this.UID == 0) {
-                console.log(this.UID + "> Potential Position: " + potentialPosition);
+                console.log(this.UID + "> move()");
             }
-            if (!collisionCheck(clamp(potentialPosition[0], 0, this.mapBounds[0]), clamp(potentialPosition[1], 0, this.mapBounds[1]))) {
-                trapCount++;
-                if (this.UID == 0) {
-                    console.log(this.UID + "> Trap Count: " + trapCount);
-                }
-                availableMoves.splice(i, 1);
-                i--;
-                if (this.UID == 0) {
-                    console.log(this.UID + "> Available Moves: " + this.format2DArray(availableMoves));
-                }
-            }
-            else if (distancesToPlayer[i] <= 1) {
-                this.attack();
+            if (this.Dead) {
                 return;
             }
-            else {
-                distancesToPlayer.push(this.getDistance(potentialPosition, playerPosition));
+            let availableMoves = [[clamp(this.Position[0] - 1, 0, this.mapBounds[1]), this.Position[1]],
+                [clamp(this.Position[0] + 1, 0, this.mapBounds[1]), this.Position[1]],
+                [this.Position[0], clamp(this.Position[1] - 1, 0, this.mapBounds[0])],
+                [this.Position[0], clamp(this.Position[1] + 1, 0, this.mapBounds[0])]];
+            if (this.UID == 0) {
+                console.log(this.UID + "> Avaliable Moves: " + this.format2DArray(availableMoves));
             }
-        }
-        if (this.UID == 0) {
-            console.log(this.UID + "> Final Trap Count: " + trapCount);
-            console.log(this.UID + "> Distances to Player: " + distancesToPlayer);
-        }
-        if (trapCount == 3) {
-            this.getOnlyMove(availableMoves);
-            return;
-        }
-        if (trapCount >= 4) {
-            this.Dead = true;
-            return;
-        }
-        if (trapCount <= 2) {
-            this.getBestMove(distancesToPlayer, availableMoves);
-            return;
-        }
+            let trapCount = 0;
+            let distancesToPlayer = [];
+            if (availableMoves.length === 0) {
+                console.error("No available moves.");
+                return;
+            }
+            for (let i = 0; i < availableMoves.length; i++) {
+                let potentialPosition = [...availableMoves[i]];
+                if (this.UID == 0) {
+                    console.log(this.UID + "> Potential Position: " + potentialPosition);
+                }
+                if (!collisionCheck(clamp(potentialPosition[0], 0, this.mapBounds[0]), clamp(potentialPosition[1], 0, this.mapBounds[1]))) {
+                    trapCount++;
+                    if (this.UID == 0) {
+                        console.log(this.UID + "> Trap Count: " + trapCount);
+                    }
+                    availableMoves.splice(i, 1);
+                    i--;
+                    if (this.UID == 0) {
+                        console.log(this.UID + "> Available Moves: " + this.format2DArray(availableMoves));
+                    }
+                }
+                else if (distancesToPlayer[i] <= 2) {
+                    this.attack();
+                    return;
+                }
+                else {
+                    distancesToPlayer.push(this.getDistance(potentialPosition, playerPosition));
+                }
+            }
+            if (this.UID == 0) {
+                console.log(this.UID + "> Final Trap Count: " + trapCount);
+                console.log(this.UID + "> Distances to Player: " + distancesToPlayer);
+            }
+            if (trapCount == 3) {
+                this.getOnlyMove(availableMoves);
+                return;
+            }
+            if (trapCount >= 4) {
+                this.Dead = true;
+                return;
+            }
+            if (trapCount <= 2) {
+                this.getBestMove(distancesToPlayer, availableMoves);
+                return;
+            }
+        });
     }
     attack() {
         if (this.UID == 0) {
@@ -152,7 +154,7 @@ class Enemy {
                 return;
             }
             this.lastPosition = [...this.Position];
-            this.move(playerPosition);
+            yield this.move(playerPosition);
             yield this.delay(1000 / this.Speed);
             screenBuffer[this.Position[0]][this.Position[1]] = 'V';
             if (this.lastPosition[0] !== this.Position[0] || this.lastPosition[1] !== this.Position[1]) {
@@ -260,7 +262,7 @@ function initEnemies(amount) {
     for (let i = 0; i < amount; i++) {
         let row = Math.floor(Math.random() * bounds[0]);
         let col = Math.floor(Math.random() * bounds[1]);
-        if (screenBuffer[row][col] !== ('●' || 'V' || '□')) {
+        if (screenBuffer[row][col] !== '●' && screenBuffer[row][col] !== 'V' && screenBuffer[row][col] !== '□') {
             screenBuffer[row][col] = 'V';
         }
         new Enemy(i + offset, [row, col], 4, 1, 0.5, bounds);
